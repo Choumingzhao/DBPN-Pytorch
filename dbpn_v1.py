@@ -9,17 +9,17 @@ class Net(nn.Module):
         super(Net, self).__init__()
         
         if scale_factor == 2:
-        	kernel = 6
-        	stride = 2
-        	padding = 2
+            kernel = 6
+            stride = 2
+            padding = 2
         elif scale_factor == 4:
-        	kernel = 8
-        	stride = 4
-        	padding = 2
+            kernel = 8
+            stride = 4
+            padding = 2
         elif scale_factor == 8:
-        	kernel = 12
-        	stride = 8
-        	padding = 2
+            kernel = 12
+            stride = 8
+            padding = 2
         
         #Initial Feature Extraction
         self.feat0 = ConvBlock(num_channels, feat, 3, 1, 1, activation='prelu', norm=None)
@@ -50,13 +50,13 @@ class Net(nn.Module):
         for m in self.modules():
             classname = m.__class__.__name__
             if classname.find('Conv2d') != -1:
-        	    torch.nn.init.kaiming_normal_(m.weight)
-        	    if m.bias is not None:
-        		    m.bias.data.zero_()
+                torch.nn.init.kaiming_normal_(m.weight)
+                if m.bias is not None:
+                    m.bias.data.zero_()
             elif classname.find('ConvTranspose2d') != -1:
-        	    torch.nn.init.kaiming_normal_(m.weight)
-        	    if m.bias is not None:
-        		    m.bias.data.zero_()
+                torch.nn.init.kaiming_normal_(m.weight)
+                if m.bias is not None:
+                    m.bias.data.zero_()
             
     def forward(self, x):
         x = self.feat0(x)

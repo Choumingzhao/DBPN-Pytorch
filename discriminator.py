@@ -30,13 +30,13 @@ class Discriminator(nn.Module):
         for m in self.modules():
             classname = m.__class__.__name__
             if classname.find('Conv2d') != -1:
-        	    torch.nn.init.kaiming_normal_(m.weight)
-        	    if m.bias is not None:
-        		    m.bias.data.zero_()
+                torch.nn.init.kaiming_normal_(m.weight)
+                if m.bias is not None:
+                    m.bias.data.zero_()
             elif classname.find('ConvTranspose2d') != -1:
-        	    torch.nn.init.kaiming_normal_(m.weight)
-        	    if m.bias is not None:
-        		    m.bias.data.zero_()
+                torch.nn.init.kaiming_normal_(m.weight)
+                if m.bias is not None:
+                    m.bias.data.zero_()
 
     def forward(self, x):
         out = self.input_conv(x)

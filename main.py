@@ -47,6 +47,8 @@ hostname = str(socket.gethostname())
 cudnn.benchmark = True
 print(opt)
 
+
+
 def train(epoch):
     epoch_loss = 0
     model.train()
@@ -65,17 +67,17 @@ def train(epoch):
             prediction = prediction + bicubic
 
         loss = criterion(prediction, target)
-        t1 = time.time()
         epoch_loss += loss.data
         loss.backward()
         optimizer.step()
+        t1 = time.time()
 
         print("===> Epoch[{}]({}/{}): Loss: {:.4f} || Timer: {:.4f} sec.".format(epoch, iteration, len(training_data_loader), loss.data, (t1 - t0)))
 
     print("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch, epoch_loss / len(training_data_loader)))
 
 
-def test():
+def test(testing_data_loader):
     avg_psnr = 0
     for batch in testing_data_loader:
         input, target = Variable(batch[0]), Variable(batch[1])
@@ -97,7 +99,7 @@ def print_network(net):
     print('Total number of parameters: %d' % num_params)
 
 def checkpoint(epoch):
-    model_out_path = opt.save_folder+opt.train_dataset+hostname+opt.model_type+opt.prefix+"_epoch_{}.pth".format(epoch)
+    model_out_path = opt.save_folder+opt.model_type+ f'_x{opt.upscale_factor}' + opt.prefix+"_epoch_{}.pth".format(epoch)
     torch.save(model.state_dict(), model_out_path)
     print("Checkpoint saved to {}".format(model_out_path))
 
@@ -129,11 +131,16 @@ print_network(model)
 print('----------------------------------------------')
 
 if opt.pretrained:
-    model_name = os.path.join(opt.save_folder + opt.pretrained_sr)
+    model_name = opt.pretrained_sr
     if os.path.exists(model_name):
         #model= torch.load(model_name, map_location=lambda storage, loc: storage)
         model.load_state_dict(torch.load(model_name, map_location=lambda storage, loc: storage))
         print('Pre-trained SR model is loaded.')
+    else:
+        raise FileNotFoundError(f'Cannot find pretrained model {model_name}')
+        
+else:
+    print("Not using pre-trained, training from scratch.")
 
 if cuda:
     model = model.cuda(gpus_list[0])
@@ -141,7 +148,10 @@ if cuda:
 
 optimizer = optim.Adam(model.parameters(), lr=opt.lr, betas=(0.9, 0.999), eps=1e-8)
 
+total_t0 = time.time()
+
 for epoch in range(opt.start_iter, opt.nEpochs + 1):
+    epoch_t0 = time.time()
     train(epoch)
 
     # learning rate is decayed by a factor of 10 every half of total epochs
@@ -150,5 +160,8 @@ for epoch in range(opt.start_iter, opt.nEpochs + 1):
             param_group['lr'] /= 10.0
         print('Learning rate decay: lr={}'.format(optimizer.param_groups[0]['lr']))
             
-    if (epoch+1) % (opt.snapshots) == 0:
+    if epoch % (opt.snapshots) == 0:
         checkpoint(epoch)
+    print(f"Epoch {epoch} time usage: {time.time() - epoch_t0}")
+    print(f"Total time usage: {time.time() - total_t0} seconds\n"
+          f"Time per epoch: {(time.time() - total_t0)/epoch}")

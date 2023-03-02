@@ -13,8 +13,6 @@ from dbpn_iterative import Net as DBPNITER
 from data import get_eval_set
 from functools import reduce
 
-from scipy.misc import imsave
-import scipy.io as sio
 import time
 import cv2
 
@@ -58,7 +56,18 @@ if opt.model_type == 'DBPNLL':
 elif opt.model_type == 'DBPN-RES-MR64-3':
     model = DBPNITER(num_channels=3, base_filter=64,  feat = 256, num_stages=3, scale_factor=opt.upscale_factor) ###D-DBPN
 else:
+    print(f'Using {opt.model_type} model')
     model = DBPN(num_channels=3, base_filter=64,  feat = 256, num_stages=7, scale_factor=opt.upscale_factor) ###D-DBPN
+
+def print_network(net):
+    num_params = 0
+    for param in net.parameters():
+        num_params += param.numel()
+    print(net)
+    print('Total number of parameters: %d' % num_params)
+
+print_network(model)
+
     
 if cuda:
     model = torch.nn.DataParallel(model, device_ids=gpus_list)
