@@ -4,7 +4,7 @@
 * Mar 25, 2019 -> Paper on Video Super-Resolution [RBPN](https://github.com/alterzero/RBPN-PyTorch) (CVPR2019)
 * Apr 12, 2019 -> Added [Extension of DBPN](https://arxiv.org/abs/1904.05677) paper and model. 
 
-# Deep Back-Perojection Networks for Super-Resolution (CVPR2018)
+# Deep Back-Projection Networks for Super-Resolution (CVPR2018)
 
 ## Winner (1st) of [NTIRE2018](http://openaccess.thecvf.com/content_cvpr_2018_workshops/papers/w13/Timofte_NTIRE_2018_Challenge_CVPR_2018_paper.pdf) Competition (Track: x8 Bicubic Downsampling)
 
