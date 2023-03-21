@@ -15,10 +15,7 @@ from dbpn import Net as DBPN
 #from dbpn_iterative import Net as DBPNITER
 from discriminator import Discriminator, FeatureExtractor, FeatureExtractorResnet
 from data import get_training_set
-from random import randrange
-import pdb
 import socket
-import time
 import utils
 
 # Training settings
@@ -169,7 +166,7 @@ def train(epoch):
 
     print("===> Epoch {} Complete: Avg. Loss G: {:.4f} D: {:.4f} MSE: {:.4f} Perceptual: {:.4f} Style: {:.4f} Adv: {:.4f}".format(epoch, G_epoch_loss / len(training_data_loader), D_epoch_loss / len(training_data_loader), mse_epoch_loss/ len(training_data_loader), feat_epoch_loss/ len(training_data_loader),style_epoch_loss/ len(training_data_loader), adv_epoch_loss/ len(training_data_loader) ))
 
-def test():
+def test(testing_data_loader):
     avg_psnr = 0
     for batch in testing_data_loader:
         input, target = Variable(batch[0]), Variable(batch[1])
@@ -185,10 +182,10 @@ def test():
 
 def checkpoint(epoch, pretrained_flag=False):
     if pretrained_flag:
-        model_out_path = opt.save_folder+hostname+opt.model_type+opt.prefix+"_pretrained_{}.pth".format(epoch)
+        model_out_path = opt.save_folder+opt.model_type+opt.prefix+"_pretrained_{}.pth".format(epoch)
     else:
-        model_out_path = opt.save_folder+hostname+opt.model_type+opt.prefix+opt.feature_extractor+"_epoch_{}.pth".format(epoch)
-        model_out_path_D = opt.save_folder+hostname+opt.model_type+opt.prefix+opt.feature_extractor+"_epoch_Discriminator_{}.pth".format(epoch)
+        model_out_path = opt.save_folder+opt.model_type+opt.prefix+opt.feature_extractor+"_epoch_{}.pth".format(epoch)
+        model_out_path_D = opt.save_folder+opt.model_type+opt.prefix+opt.feature_extractor+"_epoch_Discriminator_{}.pth".format(epoch)
     torch.save(model.state_dict(), model_out_path)
     torch.save(D.state_dict(), model_out_path_D)
     print("Checkpoint saved to {}".format(model_out_path))
@@ -229,6 +226,7 @@ else:
 ###LOSS
 MSE_loss = nn.MSELoss()
 BCE_loss = nn.BCELoss()
+criterion = MSE_loss
 
 print('---------- Generator architecture -------------')
 utils.print_network(model)
@@ -274,7 +272,7 @@ for epoch in range(opt.start_iter, opt.nEpochs + 1):
     #test()
 
     # learning rate is decayed by a factor of 10 every half of total epochs
-    if (epoch+1) % (opt.nEpochs/2) == 0:
+    if epoch % (opt.nEpochs/2) == 0:
         for param_group in optimizer.param_groups:
             param_group['lr'] /= 10.0
         print('G: Learning rate decay: lr={}'.format(optimizer.param_groups[0]['lr']))
@@ -282,5 +280,5 @@ for epoch in range(opt.start_iter, opt.nEpochs + 1):
             param_group['lr'] /= 10.0
         print('D: Learning rate decay: lr={}'.format(D_optimizer.param_groups[0]['lr']))
             
-    if (epoch+1) % (opt.snapshots) == 0:
+    if epoch % (opt.snapshots) == 0:
         checkpoint(epoch)

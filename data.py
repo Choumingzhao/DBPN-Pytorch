@@ -14,5 +14,5 @@ def get_training_set(data_dir, hr, upscale_factor, patch_size, data_augmentation
 
 def get_eval_set(lr_dir, upscale_factor):
     return DatasetFromFolderEval(lr_dir, upscale_factor,
-                             transform=transform())
+                                 transform=transform())
 

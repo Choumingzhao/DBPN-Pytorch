@@ -1,30 +1,31 @@
 import torch.utils.data as data
-import torch
-import numpy as np
 import os
-from os import listdir
+import random
+
 from os.path import join
 from PIL import Image, ImageOps
-import random
-from random import randrange
+
 
 def is_image_file(filename):
     return any(filename.endswith(extension) for extension in [".png", ".jpg", ".jpeg"])
 
 
 def load_img(filepath):
+    """Pillow load image into numpy.array."""
     img = Image.open(filepath).convert('RGB')
     #y, _, _ = img.split()
     return img
 
 def rescale_img(img_in, scale):
+    """Pillow image resize using bicubic."""
     size_in = img_in.size
     new_size_in = tuple([int(x * scale) for x in size_in])
     img_in = img_in.resize(new_size_in, resample=Image.BICUBIC)
     return img_in
 
 def get_patch(img_in, img_tar, img_bic, patch_size, scale, ix=-1, iy=-1):
-    (ih, iw) = img_in.size
+    """Clip small patch inside the image."""
+    (ih, iw) = img_in.size # (height, width) / (y, x)
     (th, tw) = (scale * ih, scale * iw)
 
     patch_mult = scale #if len(scale) > 1 else 1
@@ -38,16 +39,17 @@ def get_patch(img_in, img_tar, img_bic, patch_size, scale, ix=-1, iy=-1):
 
     (tx, ty) = (scale * ix, scale * iy)
 
-    img_in = img_in.crop((iy,ix,iy + ip, ix + ip))
-    img_tar = img_tar.crop((ty,tx,ty + tp, tx + tp))
-    img_bic = img_bic.crop((ty,tx,ty + tp, tx + tp))
-                
+    img_in = img_in.crop((iy, ix, iy + ip, ix + ip)) #(left, upper, right, lower)
+    img_tar = img_tar.crop((ty, tx, ty + tp, tx + tp))
+    img_bic = img_bic.crop((ty, tx, ty + tp, tx + tp))
+
     info_patch = {
         'ix': ix, 'iy': iy, 'ip': ip, 'tx': tx, 'ty': ty, 'tp': tp}
 
     return img_in, img_tar, img_bic, info_patch
 
 def augment(img_in, img_tar, img_bic, flip_h=True, rot=True):
+    """Augment image(numpy.array) using random flip/rotate/mirror."""
     info_aug = {'flip_h': False, 'flip_v': False, 'trans': False}
     
     if random.random() < 0.5 and flip_h:
@@ -73,19 +75,24 @@ def augment(img_in, img_tar, img_bic, flip_h=True, rot=True):
 class DatasetFromFolder(data.Dataset):
     def __init__(self, image_dir, patch_size, upscale_factor, data_augmentation, transform=None):
         super(DatasetFromFolder, self).__init__()
-        self.image_filenames = [join(image_dir, x) for x in listdir(image_dir) if is_image_file(x)]
+        self.image_filenames = [join(image_dir, x) for x in os.listdir(image_dir) if is_image_file(x)]
         self.patch_size = patch_size
         self.upscale_factor = upscale_factor
         self.transform = transform
         self.data_augmentation = data_augmentation
 
     def __getitem__(self, index):
+        """Load single HR image and generate (target_downsampled, target_hr, target_downsampled_upsampled) tuple"""
         target = load_img(self.image_filenames[index])
         
-        input = target.resize((int(target.size[0]/self.upscale_factor),int(target.size[1]/self.upscale_factor)), Image.BICUBIC)       
+        input = target.resize((int(target.size[0]/self.upscale_factor),
+                               int(target.size[1]/self.upscale_factor)), 
+                               Image.BICUBIC)
         bicubic = rescale_img(input, self.upscale_factor)
         
-        input, target, bicubic, _ = get_patch(input,target,bicubic,self.patch_size, self.upscale_factor)
+        input, target, bicubic, _ = get_patch(input, target, bicubic, 
+                                              self.patch_size, 
+                                              self.upscale_factor)
         
         if self.data_augmentation:
             input, target, bicubic, _ = augment(input, target, bicubic)
@@ -103,7 +110,7 @@ class DatasetFromFolder(data.Dataset):
 class DatasetFromFolderEval(data.Dataset):
     def __init__(self, lr_dir, upscale_factor, transform=None):
         super(DatasetFromFolderEval, self).__init__()
-        self.image_filenames = [join(lr_dir, x) for x in listdir(lr_dir) if is_image_file(x)]
+        self.image_filenames = [join(lr_dir, x) for x in os.listdir(lr_dir) if is_image_file(x)]
         self.upscale_factor = upscale_factor
         self.transform = transform
 
